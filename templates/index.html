@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Audio Recording Interface</title>
+    <script src="https://cdn.rawgit.com/mattdiamond/Recorderjs/08e7abd9/dist/recorder.js"></script>
+</head>
+<body>
+    <h1>Audio Recording Interface</h1>
+    <div>
+        <button id="record-button" onclick="startRecording()">Record</button>
+        <button id="stop-button" onclick="stopRecording()">Stop</button>
+    </div>
+    <div>
+        <audio id="audio-preview" controls></audio>
+    </div>
+    <script>
+        var audio_context;
+        var recorder;
+
+        function startUserMedia(stream) {
+            var input = audio_context.createMediaStreamSource(stream);
+            recorder = new Recorder(input);
+        }
+
+        function startRecording() {
+            recorder && recorder.record();
+        }
+
+        function stopRecording() {
+            recorder && recorder.stop();
+            createDownloadLink();
+            recorder.clear();
+        }
+
+        function createDownloadLink() {
+            recorder && recorder.exportWAV(function(blob) {
+                var url = URL.createObjectURL(blob);
+                var au = document.createElement('audio');
+                var li = document.createElement('li');
+                var link = document.createElement('a');
+
+                // display the audio preview
+                au.controls = true;
+                au.src = url;
+                document.getElementById("audio-preview").appendChild(au);
+
+                // create the download link
+                link.href = url;
+                link.download = 'recorded_audio.wav';
+                link.innerHTML = 'Download Recorded Audio';
+                document.getElementById("audio-preview").appendChild(link);
+            });
+        }
+
+        window.onload = function init() {
+            try {
+                // webkit shim
+                window.AudioContext = window.AudioContext || window.webkitAudioContext;
+                navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia;
+                window.URL = window.URL || window.webkitURL;
+
+                audio_context = new AudioContext;
+                navigator.getUserMedia({audio: true}, startUserMedia, function(e) {
+                    console.log('No live audio input: ' + e);
+                });
+            } catch (e) {
+                console.log('Failed to initialize audio context: ' + e);
+            }
+        };
+    </script>
+</body>
+</html>
